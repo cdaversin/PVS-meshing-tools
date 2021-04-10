@@ -15,6 +15,26 @@ mesh = Mesh()
 with XDMFFile(MPI.comm_world, mesh_file) as xdmf:
     xdmf.read(mesh)
 
+# Mark inlets and outlets
+inlet_tag = 10
+outlet_tag = 20
+mf = MeshFunction('size_t',mesh, mesh.topology().dim()-1)
+# Tag inlets
+with open(prefix + "_centerline_inlets.txt", "r") as inlet_file:
+    inlets = np.loadtxt(inlet_file, dtype='int')
+for i, inlet in enumerate(inlets):
+    mf[inlet] = int(inlet_tag) + i
+# Tag outlets
+with open(prefix + "_centerline_outlets.txt", "r") as outlet_file:
+    outlets = np.loadtxt(outlet_file, dtype='int')
+for i, outlet in enumerate(outlets):
+    mf[outlet] = int(outlet_tag) + i
+
+# Export markers (check)
+mfile = XDMFFile(MPI.comm_world, "./C0075/markers.xdmf")
+mfile.write(mf)
+mfile.close()
+
 # Load data
 # Scalar
 radius_data = np.load(prefix + "_centerline_max_radius.npy")

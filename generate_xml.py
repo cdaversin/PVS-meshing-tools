@@ -94,9 +94,28 @@ if CenterlineMesh:
     cells_ids = centerline_geo_vmtktoNumpy.ArrayDict["CellData"]["CellPointIds"]
     # Get cells array [[pt1,pt2], [pt2,pt3], ...] from cells ids array
     cells_array = np.empty((0,2), int)
+
+    with open(path.join(ofile_mesh + "_centerline_inlets.txt"),'ab') as inlet_file:
+        inlet_file.truncate(0)
+    with open(path.join(ofile_mesh + "_centerline_outlets.txt"),'ab') as outlet_file:
+        outlet_file.truncate(0)
+
     for i in range(0, len(cells_ids)):
+        cells_array_ = np.empty((0,2), int) # VMTK cell (=branch)
         for j in range(1, cells_ids[i].shape[0]):
-            cells_array = np.append(cells_array, [[cells_ids[i][j-1], cells_ids[i][j]]], axis=0)
+            cells_array_ = np.append(cells_array_, [[cells_ids[i][j-1], cells_ids[i][j]]], axis=0)
+        cells_array = np.append(cells_array, cells_array_, axis=0)
+
+        # Write inlet indices
+        with open(path.join(ofile_mesh + "_centerline_inlets.txt"),'ab') as inlet_file:
+            np.savetxt(inlet_file,  [cells_ids[i][0]], fmt='%i')
+        # Write outlet indices
+        with open(path.join(ofile_mesh + "_centerline_outlets.txt"),'ab') as outlet_file:
+            np.savetxt(outlet_file, [cells_ids[i][cells_ids[i].shape[0]-1]], fmt='%i')
+
+        # TODO : Make sure we are not saving the same inlet/outlet twice (compare coordinates)
+
+    # Concatenate cells arrays (branches)
     np.save(path.join(ofile_mesh + "_centerline_cells_array.npy"), cells_array)
 
     # Radius

@@ -45,15 +45,19 @@ do
        OFILE="${OFILE}_${i}_ratio"
        if [ "$CENTERLINE_MESH" == true ];then
            python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --non_const_thickness --centerline_mesh --target_edge_factor $EDGE_FACTOR --nb_sub_layers $NB_SUB_LAYERS || exit 1
+           #python3 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --non_const_thickness --centerline_mesh --target_edge_factor $EDGE_FACTOR --nb_sub_layers $NB_SUB_LAYERS || exit 1
        else
            python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --non_const_thickness --target_edge_factor $EDGE_FACTOR --nb_sub_layers $NB_SUB_LAYERS || exit 1
+           #python3 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --non_const_thickness --target_edge_factor $EDGE_FACTOR --nb_sub_layers $NB_SUB_LAYERS || exit 1
        fi
    else
        OFILE="${OFILE}_${i}_cst"
        if [ "$CENTERLINE_MESH" == true ];then
            python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --centerline_mesh --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
+           #python3 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --centerline_mesh --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
        else
            python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
+           #python3 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
        fi
    fi
 

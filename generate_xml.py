@@ -92,14 +92,17 @@ if CenterlineMesh:
     np.save(path.join(ofile_mesh + "_centerline_points.npy"), centerline_points)
     # Centerline points ids
     cells_ids = centerline_geo_vmtktoNumpy.ArrayDict["CellData"]["CellPointIds"]
-    # Get cells array [[pt1,pt2], [pt2,pt3], ...] from cells ids array
-    cells_array = np.empty((0,2), int)
+    # Centerline branches length
+    length_array = centerline_geo_vmtktoNumpy.ArrayDict["CellData"]["Length"]
+    np.savetxt(path.join(ofile_mesh + "_centerline_branches_length.txt"), [length_array])
 
     with open(path.join(ofile_mesh + "_centerline_inlets.txt"),'ab') as inlet_file:
         inlet_file.truncate(0)
     with open(path.join(ofile_mesh + "_centerline_outlets.txt"),'ab') as outlet_file:
         outlet_file.truncate(0)
 
+    # Get cells array [[pt1,pt2], [pt2,pt3], ...] from cells ids array
+    cells_array = np.empty((0,2), int)
     inlet_coord = np.empty((0,1), float)
     outlet_coord = np.empty((0,1), float)
     for i in range(0, len(cells_ids)):

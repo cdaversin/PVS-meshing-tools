@@ -100,20 +100,25 @@ if CenterlineMesh:
     with open(path.join(ofile_mesh + "_centerline_outlets.txt"),'ab') as outlet_file:
         outlet_file.truncate(0)
 
+    inlet_coord = np.empty((0,1), float)
+    outlet_coord = np.empty((0,1), float)
     for i in range(0, len(cells_ids)):
-        cells_array_ = np.empty((0,2), int) # VMTK cell (=branch)
+        cells_array_ = np.empty((0,2), int) # VMTK cell (= branch)
         for j in range(1, cells_ids[i].shape[0]):
             cells_array_ = np.append(cells_array_, [[cells_ids[i][j-1], cells_ids[i][j]]], axis=0)
         cells_array = np.append(cells_array, cells_array_, axis=0)
 
         # Write inlet indices
         with open(path.join(ofile_mesh + "_centerline_inlets.txt"),'ab') as inlet_file:
-            np.savetxt(inlet_file,  [cells_ids[i][0]], fmt='%i')
+            # Check coordinates
+            if not centerline_points[cells_ids[i][0]] in inlet_coord:
+                inlet_coord = np.append(inlet_coord, [centerline_points[cells_ids[i][0]]])
+                np.savetxt(inlet_file,  [cells_ids[i][0]], fmt='%i')
         # Write outlet indices
         with open(path.join(ofile_mesh + "_centerline_outlets.txt"),'ab') as outlet_file:
-            np.savetxt(outlet_file, [cells_ids[i][cells_ids[i].shape[0]-1]], fmt='%i')
-
-        # TODO : Make sure we are not saving the same inlet/outlet twice (compare coordinates)
+            if not centerline_points[cells_ids[i][cells_ids[i].shape[0]-1]] in outlet_coord:
+                outlet_coord = np.append(outlet_coord, [centerline_points[cells_ids[i][cells_ids[i].shape[0]-1]]])
+                np.savetxt(outlet_file, [cells_ids[i][cells_ids[i].shape[0]-1]], fmt='%i')
 
     # Concatenate cells arrays (branches)
     np.save(path.join(ofile_mesh + "_centerline_cells_array.npy"), cells_array)

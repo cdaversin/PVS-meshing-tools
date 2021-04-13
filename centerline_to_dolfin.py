@@ -22,16 +22,18 @@ mf = MeshFunction('size_t',mesh, mesh.topology().dim()-1)
 # Tag inlets
 with open(prefix + "_centerline_inlets.txt", "r") as inlet_file:
     inlets = np.loadtxt(inlet_file, dtype='int')
+    inlets = np.atleast_1d(inlets)
 for i, inlet in enumerate(inlets):
     mf[inlet] = int(inlet_tag) + i
 # Tag outlets
 with open(prefix + "_centerline_outlets.txt", "r") as outlet_file:
     outlets = np.loadtxt(outlet_file, dtype='int')
+    outlets = np.atleast_1d(outlets)
 for i, outlet in enumerate(outlets):
     mf[outlet] = int(outlet_tag) + i
 
 # Export markers (check)
-mfile = XDMFFile(MPI.comm_world, "./C0075/markers.xdmf")
+mfile = XDMFFile(MPI.comm_world, prefix + "_centerline_markers.xdmf")
 mfile.write(mf)
 mfile.close()
 
@@ -62,15 +64,14 @@ t.vector().set_local(torsion_data)
 c = Function(V)
 c.vector().set_local(curvature_data)
 # Normal (Frenet)
-w = Function(W)
-w.vector().set_local(normal_data)
+w1 = Function(W)
+w1.vector().set_local(normal_data)
 # Binormal
 w2 = Function(W)
 w2.vector().set_local(binormal_data)
 # Tangent
 w3 = Function(W)
 w3.vector().set_local(tangent_data)
-
 
 # Export
 field_file = XDMFFile(MPI.comm_world, prefix + "_centerline_radius.xdmf")
@@ -84,7 +85,7 @@ field_file.write(t,0)
 field_file.close()
 
 field_file = XDMFFile(MPI.comm_world, prefix + "_centerline_normal.xdmf")
-field_file.write(w,0)
+field_file.write(w1,0)
 field_file.close()
 field_file = XDMFFile(MPI.comm_world, prefix + "_centerline_binormal.xdmf")
 field_file.write(w2,0)

@@ -1,6 +1,7 @@
 import meshio
 import numpy as np
 import argparse
+import gmsh
 
 # Configuration from arguments parsing ###########################################
 parser = argparse.ArgumentParser()
@@ -25,4 +26,15 @@ def create_line_mesh(points, cells_array, filename) :
         # cell_data=cell_data,
     )
 
-create_line_mesh(centerline_points, cells_array, output_filename + "_centerline_mesh.xdmf")
+create_line_mesh(centerline_points, cells_array, output_filename + "_centerline_mesh.msh")
+
+# Use GMSH to remove duplicates if any
+gmsh.initialize()
+gmsh.open(output_filename + "_centerline_mesh.msh")
+gmsh.model.mesh.removeDuplicateNodes()
+#gmsh.model.mesh.generate(1) # Remeshing renumbers the nodes
+gmsh.write(output_filename + "_centerline_mesh-noduplicates.msh")
+gmsh.finalize()
+
+# Convert to xdmf
+meshio._cli.convert([output_filename + "_centerline_mesh-noduplicates.msh", output_filename + "_centerline_mesh.xdmf", "--input-format", "gmsh", "--output-format", "xdmf"])

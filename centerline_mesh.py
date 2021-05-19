@@ -29,28 +29,32 @@ def create_line_mesh(points, cells_array, filename) :
 
 create_line_mesh(centerline_points, cells_array, output_filename + "_centerline_mesh.msh")
 
-# Use GMSH to remove duplicates if any
+### ------------ Remove duplicates if any (GMSH API) ----------- ###
 gmsh.initialize()
 gmsh.open(output_filename + "_centerline_mesh.msh")
-
-# Before removing duplicates
-# Return nodeTags, coord, parametricCoord
+# Node tags
 initial_node_tags = np.array(gmsh.model.mesh.getNodes()[0])
+# Node coords (re-arranged as numpy array [ [x1,x2,x3]_1, ..., [x2,x3,x3]_N])
 initial_node_coords = np.array(gmsh.model.mesh.getNodes()[1])
+initial_node_coords = np.split(initial_node_coords, len(initial_node_coords)/3.0)
+# Removing duplicate nodes
 gmsh.model.mesh.removeDuplicateNodes()
+# Updated node tags
 node_tags = np.array(gmsh.model.mesh.getNodes()[0])
+# Updated node coords (re-arranged as numpy array [ [x1,x2,x3]_1, ..., [x2,x3,x3]_N])
 node_coords = np.array(gmsh.model.mesh.getNodes()[1])
+node_coords = np.split(node_coords, len(node_coords)/3.0)
+# Getting array of removed tag to update centerline data
 common_node_tags = np.intersect1d(initial_node_tags, node_tags)
 removed_node_tags = np.delete(initial_node_tags, common_node_tags)
-#print("removed = ", removed_node_tags)
-
+# Writing updated mesh
 gmsh.write(output_filename + "_centerline_mesh-noduplicates.msh")
 gmsh.finalize()
-
-# Convert to xdmf
+# Converting to xdmf
 meshio._cli.convert([output_filename + "_centerline_mesh-noduplicates.msh", output_filename + "_centerline_mesh.xdmf", "--input-format", "gmsh", "--output-format", "xdmf"])
+### ------------------------------------------------------------- ###
 
-# Update centerline data after duplicated nods removal
+### ------- Update centerline data (mesh without duplicates) ---- ###
 radius_data = np.load(output_filename + "_centerline_max_radius.npy")
 radius_data = np.delete(radius_data, removed_node_tags)
 np.save(path.join(output_filename + "_centerline_max_radius.npy"), radius_data)
@@ -76,14 +80,18 @@ tangent_data = np.delete(tangent_data, removed_node_tags, axis=0)
 np.save(path.join(output_filename + "_centerline_frenet_tangent.npy"), tangent_data)
 
 # Update inlet/outlets indices
+inlets_arr = []
+outlets_arr = []
 with open(path.join(output_filename + "_centerline_inlets.txt"),'r') as inlet_file:
     inlets = np.loadtxt(inlet_file, dtype='int')
     inlets = np.atleast_1d(inlets)
 with open(path.join(output_filename + "_centerline_inlets.txt"),'ab') as inlet_file:
     inlet_file.truncate(0)
     for inlet in inlets:
-        np.savetxt(inlet_file, np.where(node_tags == inlet), fmt='%i')
-        #np.savetxt(inlet_file, np.where(node_coords == initial_node_coords[inlet]), fmt='%i')
+        inlet_index = np.where(node_coords == initial_node_coords[inlet])[0][0]
+        if inlet_index not in inlets_arr:
+            np.savetxt(inlet_file, [inlet_index], fmt='%i')
+            inlets_arr.append(inlet_index)
 
 with open(path.join(output_filename + "_centerline_outlets.txt"),'r') as outlet_file:
     outlets = np.loadtxt(outlet_file, dtype='int')
@@ -91,5 +99,9 @@ with open(path.join(output_filename + "_centerline_outlets.txt"),'r') as outlet_
 with open(path.join(output_filename + "_centerline_outlets.txt"),'ab') as outlet_file:
     outlet_file.truncate(0)
     for outlet in outlets:
-        np.savetxt(outlet_file, np.where(node_tags == outlet), fmt='%i')
-        #np.savetxt(outlet_file, np.where(node_coords == initial_node_coords[outlet]), fmt='%i')
+        outlet_index = np.where(node_coords == initial_node_coords[outlet])[0][0]
+        if outlet_index not in outlets_arr:
+            np.savetxt(outlet_file, [np.where(node_coords == initial_node_coords[outlet])[0][0]], fmt='%i')
+            outlets_arr.append(outlet_index)
+
+### ------------------------------------------------------------- ###

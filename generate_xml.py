@@ -113,14 +113,9 @@ if CenterlineMesh:
 
         # Write inlet indices
         with open(path.join(ofile_mesh + "_centerline_inlets.txt"),'ab') as inlet_file:
-            # Check coordinates
-            # if not centerline_points[cells_ids[i][0]] in inlet_coord:
-            #     inlet_coord = np.append(inlet_coord, [centerline_points[cells_ids[i][0]]])
             np.savetxt(inlet_file,  [cells_ids[i][0]], fmt='%i')
         # Write outlet indices
         with open(path.join(ofile_mesh + "_centerline_outlets.txt"),'ab') as outlet_file:
-            # if not centerline_points[cells_ids[i][cells_ids[i].shape[0]-1]] in outlet_coord:
-            #     outlet_coord = np.append(outlet_coord, [centerline_points[cells_ids[i][cells_ids[i].shape[0]-1]]])
             np.savetxt(outlet_file, [cells_ids[i][cells_ids[i].shape[0]-1]], fmt='%i')
 
     # Concatenate cells arrays (branches)

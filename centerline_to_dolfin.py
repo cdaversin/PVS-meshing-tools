@@ -20,7 +20,8 @@ cells = np.asarray(mesh.cells())
 coords = mesh.coordinates()
 new_cells = [tuple(row) for row in cells]
 new_cells = np.unique(new_cells, axis=0)
-# Create new mesh with updated cells (same nodes since duplicates have already been removed)
+# Create new mesh with updated cells
+# (Nodes don't change - duplicates have been removed already)
 new_mesh = Mesh()
 editor = MeshEditor()
 editor.open(new_mesh, "interval", 1, 3)
@@ -35,9 +36,10 @@ for c in range(len(new_cells)):
     editor.add_cell(cell_id, [new_cells[c][0], new_cells[c][1]])
     cell_id += 1
 editor.close()
-# Write updated mesh
+# Overwrite mesh
 with XDMFFile(MPI.comm_world, mesh_file) as xdmf:
     xdmf.write(new_mesh)
+mesh = new_mesh
 
 # Mark inlets and outlets
 inlet_tag = 10

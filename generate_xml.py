@@ -24,7 +24,7 @@ parser.add_argument('--target_edge_length', type=float, default=0.2, help="Const
 parser.add_argument('--target_edge_factor', type=float, default=0.7, help="Target edge factor (default : 0.7), used when PVS thickness is set to non constant")
 parser.add_argument('--nb_sub_layers', type=int, default=2, help="Number of layers (mesh) used in eacg boundary layer, 2*nb_sub_layers layers in PVS thickness (default : 2)")
 parser.add_argument('--centerline_mesh', type=bool, nargs='?', const=True, default=False, help="Generate centerline mesh end embedded data")
-
+parser.add_argument('--refine_centerline_mesh', type=int, default=0, help="Level of centerline mesh refinement")
 
 args = parser.parse_args()
 ifile_surface = args.input_file
@@ -35,6 +35,7 @@ TargetEdgeFactor = args.target_edge_factor
 Thickness_PVS = args.pvs_thickness
 NumberOfSubLayers = args.nb_sub_layers
 CenterlineMesh = args.centerline_mesh
+CenterlineMeshRefine = args.refine_centerline_mesh
 
 print("ifile = ", ifile_surface)
 print("ofile = ", ofile_mesh)
@@ -66,6 +67,15 @@ centerline.Surface = surface
 centerline.SeedSelectorName = 'openprofiles'
 centerline.AppendEndPoints = 1
 centerline.CenterlinesOutputFileName = path.join(ofile_mesh + "_centerline.vtp")
+centerline.VoronoiDiagramOutputFileName = path.join(ofile_mesh + "_voronoi.vtp")
+
+# Try resampling to refine the centerline mesh
+# centerline.Resampling = 1
+# target_length = 3*TargetEdgeLength
+# for i in range(CenterlineMeshRefine):
+#     target_length = 0.5*target_length
+# centerline.ResamplingStepLength = target_length
+
 centerline.Execute()
 
 # VTP writer - centerline
@@ -74,11 +84,34 @@ vtp_writer.SetFileName(path.join(ofile_mesh + "_centerline.vtp"))
 vtp_writer.SetInputData(centerline.Centerlines)
 vtp_writer.Update()
 vtp_writer.Write()
+# VTP writer - Voronoi diagram
+vtp_writer.SetFileName(path.join(ofile_mesh + "_voronoi.vtp"))
+vtp_writer.SetInputData(centerline.VoronoiDiagram)
+vtp_writer.Update()
+vtp_writer.Write()
+
+if NonConstThickness:
+    centerlineDistance= vmtkscripts.vmtkDistanceToCenterlines()
+    centerlineDistance.Surface = surface
+    centerlineDistance.Centerlines = centerline.Centerlines
+    centerlineDistance.DistanceToCenterlinesArrayName = 'DistanceToCenterlines'
+    centerlineDistance.UseRadiusInformation = 1
+    centerlineDistance.Execute()
+    surface = centerlineDistance.Surface
+
+    # VTP writer - centerline distance
+    vtp_writer.SetFileName(path.join(ofile_mesh + "_centerline-distance.vtp"))
+    vtp_writer.SetInputData(surface)
+    vtp_writer.Update()
+    vtp_writer.Write()
 
 if CenterlineMesh:
+    
     ### Centerline geometry data ###
     centerline_geo = vmtkscripts.vmtkCenterlineGeometry()
     centerline_geo.Centerlines = centerline.Centerlines
+    # if NonConstThickness:
+    #     centerline_geo.Centerlines = centerline2.Centerlines
     centerline_geo.CenterlinesOutputFileName = path.join(ofile_mesh + "_centerline_geo.vtp")
     centerline_geo.Execute()
 
@@ -139,19 +172,23 @@ if CenterlineMesh:
     torsion = centerline_geo_vmtktoNumpy.ArrayDict["PointData"]["Torsion"]
     np.save(path.join(ofile_mesh + "_centerline_torsion.npy"), torsion)
 
-if NonConstThickness:
-    centerlineDistance= vmtkscripts.vmtkDistanceToCenterlines()
-    centerlineDistance.Surface = surface
-    centerlineDistance.Centerlines = centerline.Centerlines
-    centerlineDistance.DistanceToCenterlinesArrayName = 'DistanceToCenterlines'
-    centerlineDistance.UseRadiusInformation = 1
-    centerlineDistance.Execute()
-    surface = centerlineDistance.Surface
-
-
-    # VTP writer - centerline distance
-    vtp_writer.SetFileName(path.join(ofile_mesh + "_centerline-distance.vtp"))
-    vtp_writer.SetInputData(surface)
+    ## Reconstructing Surface from Voronoi Diagram
+    print('Reconstructing Surface from Voronoi Diagram')
+    polyBallImageSize = [90,90,90]   #size of the image for the evaluation of the polyball function
+    modeller = vtkvmtk.vtkvmtkPolyBallModeller()
+    modeller.SetInputData(centerline.VoronoiDiagram)
+    modeller.SetRadiusArrayName(centerline.RadiusArrayName)
+    modeller.UsePolyBallLineOff()
+    modeller.SetSampleDimensions(polyBallImageSize)
+    modeller.Update()
+    marchingCube = vtk.vtkMarchingCubes()
+    marchingCube.SetInputData(modeller.GetOutput())
+    marchingCube.SetValue(0,0.0)
+    marchingCube.Update()  
+    envelope = marchingCube.GetOutput()
+    # VTP writer - Reconstructed surface
+    vtp_writer.SetFileName(path.join(ofile_mesh + "_reconstruction.vtp"))
+    vtp_writer.SetInputData(marchingCube.GetOutput())
     vtp_writer.Update()
     vtp_writer.Write()
 
@@ -164,6 +201,7 @@ meshGenerator.SkipRemeshing = 0
 if NonConstThickness:
     print(" -- Non constant PVS thickness -- ")
     meshGenerator.ElementSizeMode = 'edgelengtharray'
+    meshGenerator.TargetEdgeLength = TargetEdgeLength
     meshGenerator.TargetEdgeLengthFactor = TargetEdgeFactor
     meshGenerator.TargetEdgeLengthArrayName = 'DistanceToCenterlines'
 else:

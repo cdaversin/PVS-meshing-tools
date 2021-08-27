@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import gmsh
 from os import path
+import sys
 
 # Configuration from arguments parsing ###########################################
 parser = argparse.ArgumentParser()
@@ -44,9 +45,14 @@ node_tags = np.array(gmsh.model.mesh.getNodes()[0])
 # Updated node coords (re-arranged as numpy array [ [x1,x2,x3]_1, ..., [x2,x3,x3]_N])
 node_coords = np.array(gmsh.model.mesh.getNodes()[1])
 node_coords = np.split(node_coords, len(node_coords)/3.0)
-# Getting array of removed tag to update centerline data
-common_node_tags = np.intersect1d(initial_node_tags, node_tags)
-removed_node_tags = np.delete(initial_node_tags, common_node_tags)
+# Getting array of removed nodes to update centerline data
+_, common_idx_init, _ = np.intersect1d(initial_node_tags, node_tags, return_indices=True)
+removed_node_tags = np.array([]) # Tags of remote nodes
+removed_idx_init = np.array([]) # Indices of these removed nodes in the initial array
+if len(node_tags) != len(initial_node_tags): # Some nodes have been removed
+    removed_node_tags = np.delete(initial_node_tags, common_idx_init)
+    _, removed_idx_init, _ = np.intersect1d(initial_node_tags, removed_node_tags, return_indices=True)
+
 # Writing updated mesh
 gmsh.write(output_filename + "_centerline_mesh-noduplicates.msh")
 gmsh.finalize()
@@ -55,29 +61,30 @@ meshio._cli.convert([output_filename + "_centerline_mesh-noduplicates.msh", outp
 ### ------------------------------------------------------------- ###
 
 ### ------- Update centerline data (mesh without duplicates) ---- ###
-radius_data = np.load(output_filename + "_centerline_max_radius.npy")
-radius_data = np.delete(radius_data, removed_node_tags)
-np.save(path.join(output_filename + "_centerline_max_radius.npy"), radius_data)
+if len(removed_node_tags) != 0:
+    radius_data = np.load(output_filename + "_centerline_max_radius.npy")
+    radius_data = np.delete(radius_data, removed_idx_init)
+    np.save(path.join(output_filename + "_centerline_max_radius.npy"), radius_data)
 
-torsion_data = np.load(output_filename + "_centerline_torsion.npy")
-torsion_data = np.delete(torsion_data, removed_node_tags)
-np.save(path.join(output_filename +  "_centerline_torsion.npy"), torsion_data)
+    torsion_data = np.load(output_filename + "_centerline_torsion.npy")
+    torsion_data = np.delete(torsion_data, removed_idx_init)
+    np.save(path.join(output_filename +  "_centerline_torsion.npy"), torsion_data)
 
-curvature_data = np.load(output_filename + "_centerline_curvature.npy")
-curvature_data = np.delete(curvature_data, removed_node_tags)
-np.save(path.join(output_filename + "_centerline_curvature.npy"), curvature_data)
+    curvature_data = np.load(output_filename + "_centerline_curvature.npy")
+    curvature_data = np.delete(curvature_data, removed_idx_init)
+    np.save(path.join(output_filename + "_centerline_curvature.npy"), curvature_data)
 
-normal_data = np.load(output_filename + "_centerline_frenet_normal.npy")
-normal_data = np.delete(normal_data, removed_node_tags, axis=0)
-np.save(path.join(output_filename + "_centerline_frenet_normal.npy"), normal_data)
+    normal_data = np.load(output_filename + "_centerline_frenet_normal.npy")
+    normal_data = np.delete(normal_data, removed_idx_init, axis=0)
+    np.save(path.join(output_filename + "_centerline_frenet_normal.npy"), normal_data)
 
-binormal_data = np.load(output_filename + "_centerline_frenet_binormal.npy")
-binormal_data = np.delete(binormal_data, removed_node_tags, axis=0)
-np.save(path.join(output_filename + "_centerline_frenet_binormal.npy"), binormal_data)
+    binormal_data = np.load(output_filename + "_centerline_frenet_binormal.npy")
+    binormal_data = np.delete(binormal_data, removed_idx_init, axis=0)
+    np.save(path.join(output_filename + "_centerline_frenet_binormal.npy"), binormal_data)
 
-tangent_data = np.load(output_filename + "_centerline_frenet_tangent.npy")
-tangent_data = np.delete(tangent_data, removed_node_tags, axis=0)
-np.save(path.join(output_filename + "_centerline_frenet_tangent.npy"), tangent_data)
+    tangent_data = np.load(output_filename + "_centerline_frenet_tangent.npy")
+    tangent_data = np.delete(tangent_data, removed_idx_init, axis=0)
+    np.save(path.join(output_filename + "_centerline_frenet_tangent.npy"), tangent_data)
 
 # Update inlet/outlets indices
 inlets_arr = []

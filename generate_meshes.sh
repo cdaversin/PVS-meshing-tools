@@ -4,6 +4,10 @@ VTP_FILE=$(pwd)/C0075/C0075_clip2.vtp
 VTP_FILE_EXT=$(pwd)/C0075/C0075_clip2_ext.vtp
 OFILE=$(pwd)/C0075/C0075_clip2_mesh1
 
+# VTP_FILE=$(pwd)/C0092/C0092_clip1_0.vtp
+# VTP_FILE_EXT=$(pwd)/C0092/C0092_clip1_ext.vtp
+# OFILE=$(pwd)/C0092/C0092_clip1_mesh1
+
 # Extensions to get "smoother" inlet/outlets surfaces
 #EXT=true
 EXT=false
@@ -14,20 +18,21 @@ PVS_ONLY=true
 
 # Centerline mesh
 CENTERLINE_MESH=true
+REFINE=1
 
 # Mesh size
 NON_CONST_THICKNESS=true
 # Coarse
-EDGE_LENGTH=0.6
-EDGE_FACTOR=0.6
+# EDGE_LENGTH=0.6
+# EDGE_FACTOR=0.6
 # Fine
-# EDGE_LENGTH=0.4
-# EDGE_FACTOR=0.4
+EDGE_LENGTH=0.4
+EDGE_FACTOR=0.4
 
 PVS_THICKNESS=(0.95)
 # Fine : 3 / coarse : 2
-NB_SUB_LAYERS=2
-#NB_SUB_LAYERS=3
+#NB_SUB_LAYERS=2
+NB_SUB_LAYERS=3
 
 if [ "$EXT" != false ]; then
     vmtksurfacereader -ifile $VTP_FILE \
@@ -53,7 +58,7 @@ do
    else
        OFILE="${OFILE}_${i}_cst"
        if [ "$CENTERLINE_MESH" == true ];then
-           python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --centerline_mesh --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
+           python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --centerline_mesh --refine_centerline_mesh $REFINE --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
            #python3 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --centerline_mesh --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1
        else
            python2 $PWD/generate_xml.py -i $VTP_FILE -o $OFILE -t $i --target_edge_length $EDGE_LENGTH --nb_sub_layers $NB_SUB_LAYERS || exit 1

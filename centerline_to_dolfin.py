@@ -20,6 +20,15 @@ cells = np.asarray(mesh.cells())
 coords = mesh.coordinates()
 new_cells = [tuple(row) for row in cells]
 new_cells = np.unique(new_cells, axis=0)
+
+# Removing cells of size 0 if any (due to centerline resampling in vmtk)
+cells_to_remove = []
+for c_id, c in enumerate(new_cells):
+    if new_cells[c_id][0] == new_cells[c_id][1]: # cell of size 0
+        cells_to_remove.append(c_id)
+print("Removing cells ", cells_to_remove, " of size zero")
+new_cells = np.delete(new_cells, cells_to_remove, axis=0)
+
 # Create new mesh with updated cells
 # (Nodes don't change - duplicates have been removed already)
 new_mesh = Mesh()
@@ -27,14 +36,11 @@ editor = MeshEditor()
 editor.open(new_mesh, "interval", 1, 3)
 editor.init_vertices(len(coords))
 editor.init_cells(len(new_cells))
-vert_id = 0
-for vert in coords:
-    editor.add_vertex(vert_id, vert)
-    vert_id += 1
-cell_id = 0
-for c in range(len(new_cells)):
-    editor.add_cell(cell_id, [new_cells[c][0], new_cells[c][1]])
-    cell_id += 1
+for v_id, v in enumerate(coords):
+    editor.add_vertex(v_id, v)
+for c_id, c in enumerate(new_cells):
+    editor.add_cell(c_id, [new_cells[c_id][0], new_cells[c_id][1]])
+
 editor.close()
 # Overwrite mesh
 with XDMFFile(MPI.comm_world, mesh_file) as xdmf:

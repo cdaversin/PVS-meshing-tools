@@ -18,7 +18,7 @@ PVS_ONLY=true
 
 # Centerline mesh
 CENTERLINE_MESH=true
-REFINE=1
+REFINE=0
 
 # Mesh size
 NON_CONST_THICKNESS=true

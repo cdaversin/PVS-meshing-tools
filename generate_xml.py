@@ -70,11 +70,11 @@ centerline.CenterlinesOutputFileName = path.join(ofile_mesh + "_centerline.vtp")
 centerline.VoronoiDiagramOutputFileName = path.join(ofile_mesh + "_voronoi.vtp")
 
 # Try resampling to refine the centerline mesh
-# centerline.Resampling = 1
-# target_length = 3*TargetEdgeLength
-# for i in range(CenterlineMeshRefine):
-#     target_length = 0.5*target_length
-# centerline.ResamplingStepLength = target_length
+centerline.Resampling = 1
+target_length = TargetEdgeLength
+for i in range(CenterlineMeshRefine):
+    target_length = 0.5*target_length
+centerline.ResamplingStepLength = target_length
 
 centerline.Execute()
 

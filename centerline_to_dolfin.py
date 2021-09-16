@@ -86,25 +86,33 @@ tangent_data = np.concatenate(tangent_data, axis = None)
 V = FunctionSpace(mesh, "CG", 1)
 W = VectorFunctionSpace(mesh, "CG", 1)
 
-# Radius
-u = Function(V)
-u.vector().set_local(radius_data)
-# Torsion
-t = Function(V)
-t.vector().set_local(torsion_data)
-# Curvature
-c = Function(V)
-c.vector().set_local(curvature_data)
-# Normal (Frenet)
-w1 = Function(W)
-w1.vector().set_local(normal_data)
-# Binormal
-w2 = Function(W)
-w2.vector().set_local(binormal_data)
-# Tangent
-w3 = Function(W)
-w3.vector().set_local(tangent_data)
+mesh_coords = mesh.coordinates()
 
+# Scalar data
+u = Function(V) # Radius
+t = Function(V) # Torsion
+c = Function(V) # Curvature
+dof_coords = V.tabulate_dof_coordinates()
+d2v = dof_to_vertex_map(V)
+for d in range(len(d2v)):
+    # Sanity check of coordinates
+    assert(dof_coords[d].all() == mesh_coords[d2v[d]].all())
+    # Data uses vertex numbering - needs dof to vertex mapping
+    u.vector()[d] = radius_data[d2v[d]]
+    t.vector()[d] = torsion_data[d2v[d]]
+    c.vector()[d] = curvature_data[d2v[d]]
+
+# Vectorial data
+w1 = Function(W) # Normal (Frenet)
+w2 = Function(W) # Binormal
+w3 = Function(W) # Tangent
+dof_coords = W.tabulate_dof_coordinates()
+d2v = dof_to_vertex_map(W)
+for d in range(len(d2v)):
+    # Data uses vertex numbering - needs dof to vertex mapping
+    w1.vector()[d] = normal_data[d2v[d]]
+    w2.vector()[d] = binormal_data[d2v[d]]
+    w3.vector()[d] = tangent_data[d2v[d]]
 
 # Export - XDMF
 field_file = XDMFFile(MPI.comm_world, prefix + "_XDMF/centerline_radius.xdmf")

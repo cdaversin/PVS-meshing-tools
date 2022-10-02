@@ -23,6 +23,7 @@ def create_line_mesh(points, cells_array, filename) :
         filename,
         points,
         centerline_cells,
+        file_format="gmsh",
         # Optional
         # point_data=point_data,
         # cell_data=cell_data,
@@ -56,8 +57,13 @@ if len(node_tags) != len(initial_node_tags): # Some nodes have been removed
 # Writing updated mesh
 gmsh.write(output_filename + "_centerline_mesh-noduplicates.msh")
 gmsh.finalize()
+
 # Converting to xdmf
-meshio._cli.convert([output_filename + "_centerline_mesh-noduplicates.msh", output_filename + "_centerline_mesh.xdmf", "--input-format", "gmsh", "--output-format", "xdmf"])
+mesh_gmsh_to_xdmf = meshio.gmsh.read(output_filename + "_centerline_mesh-noduplicates.msh")
+meshio.xdmf.write(output_filename + "_centerline_mesh.xdmf", mesh_gmsh_to_xdmf)
+# OLD version
+# meshio._cli.convert([output_filename + "_centerline_mesh-noduplicates.msh", output_filename + "_centerline_mesh.xdmf", "--input-format", "gmsh", "--output-format", "xdmf"])
+
 ### ------------------------------------------------------------- ###
 
 ### ------- Update centerline data (mesh without duplicates) ---- ###

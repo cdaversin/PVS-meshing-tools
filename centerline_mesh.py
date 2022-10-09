@@ -47,13 +47,20 @@ node_tags = np.array(gmsh.model.mesh.getNodes()[0])
 node_coords = np.array(gmsh.model.mesh.getNodes()[1])
 node_coords = np.split(node_coords, len(node_coords)/3.0)
 # Getting array of removed nodes to update centerline data
-_, common_idx_init, _ = np.intersect1d(initial_node_tags, node_tags, return_indices=True)
+try:
+    _, common_idx_init, _ = np.intersect1d(initial_node_tags, node_tags, return_indices=True)
+except:
+    common_idx_init = np.intersect1d(initial_node_tags, node_tags)
+
 removed_node_tags = np.array([]) # Tags of remote nodes
 removed_idx_init = np.array([]) # Indices of these removed nodes in the initial array
 if len(node_tags) != len(initial_node_tags): # Some nodes have been removed
     removed_node_tags = np.delete(initial_node_tags, common_idx_init)
-    _, removed_idx_init, _ = np.intersect1d(initial_node_tags, removed_node_tags, return_indices=True)
-
+    try:
+        _, removed_idx_init, _ = np.intersect1d(initial_node_tags, removed_node_tags, return_indices=True)
+    except:
+        removed_idx_init = np.intersect1d(initial_node_tags, removed_node_tags)
+    
 # Writing updated mesh
 gmsh.write(output_filename + "_centerline_mesh-noduplicates.msh")
 gmsh.finalize()
